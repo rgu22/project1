@@ -27,7 +27,15 @@ Paragraph or two introducing your datasets and variables, why they are interesti
 
 ```{R}
 # read your datasets in here, e.g., with read_csv()
-
+# library(tidyverse)
+# dataset1 <- read_csv("medicaldata.csv")
+#from internet ds1<- read_csv("url")
+# head(dataset1)
+# readxl::read_excel("filename")
+# library(fivethirtyeightdata)
+# sd <- senators
+# mtcars
+# mtcars %>% group_by(cyl) %>% summarize_at(c("hp","mpg"),.funs= list(mean=mean,sd=sd)) %>% pivot_longer(-1) %>%separate(name, into=c("var","stat")) 
 ```
 
 #### Tidying: Reshaping

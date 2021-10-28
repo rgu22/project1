@@ -48,6 +48,9 @@ data2 <- read_csv("/path/to/dataset2.csv")
 
 data1 <- read_csv("https://some.website/dataset1.csv")
 data2 <- read_csv("https://some.website/dataset2.csv")
+fivethirtyeight::police_killings
+fivethirtyeight::police_deaths
+
 ```
 
 ### Guidelines
