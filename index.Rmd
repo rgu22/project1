@@ -25,15 +25,22 @@ tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
 
 Paragraph or two introducing your datasets and variables, why they are interesting to you, etc.
 
+The datasets I have chosen are college_grad_students and college_all_ages from fivethirtyeight. The data was obtained from American Community Survey 2010-2012 Public Use Microdata Series. college_grad_students, or grad, is a data frame with 173 rows representing majors (graduate vs nongraduate students) and 22 variables. college_all_ages, or all, is a data frame with 173 rows representing majors (all ages) and 11 variables. The variables describe the employment rates, total counts, incomes, major category, and major. "grad" differs from "all" by splitting the first three variables listed before into those who graduated and those who did not. Thus, it contains more specific information than "all". This dataset is interesting to me because choosing college majors seems like a daunting task that controls the rest of your life, and many people pick randomly. I would like to see the quantitative data that shows what majors are the most lucrative. Also, as an Economics major, I feel looked down on since it's Liberal Arts, and it would interest me to see just how much more engineering majors make. I expect engineering to make the most, and for those with degrees to earn significantly more than those who did not. 
 ```{R}
 # read your datasets in here, e.g., with read_csv()
-# library(tidyverse)
+library(tidyverse)
 # dataset1 <- read_csv("medicaldata.csv")
 #from internet ds1<- read_csv("url")
 # head(dataset1)
 # readxl::read_excel("filename")
-# library(fivethirtyeightdata)
-# sd <- senators
+library(fivethirtyeight)
+
+grad <- college_grad_students
+all <- college_all_ages
+recent <- college_recent_grads
+?college_recent_grads #A data frame with 173 rows representing majors (recent graduates) and 21 variables:
+?college_grad_students #A data frame with 173 rows representing majors (graduate vs nongraduate students) and 22 variables:
+?college_all_ages #A data frame with 173 rows representing majors (all ages) and 11 variables:
 # mtcars
 # mtcars %>% group_by(cyl) %>% summarize_at(c("hp","mpg"),.funs= list(mean=mean,sd=sd)) %>% pivot_longer(-1) %>%separate(name, into=c("var","stat")) 
 ```
@@ -50,43 +57,69 @@ If your datasets are tidy already, demonstrate that you can reshape data with pi
 #### Joining/Merging
 
 ```{R}
-# your joining code
+joined <- left_join(all,grad, by="major_code", suffix=c("",".y"))
+joined %>% pivot_wider(names_from = "major_category", values_from  = "total") %>% pivot_longer(29:44, names_to="major_category", values_to="total",values_drop_na=T)
 
-# your joining code
+
 ```
 
 Discussions of joining here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
 
+In the original "all" dataset, there were 173 observations and 11 variables, each observation being an unique major. In the "grad" dataset there were 173 observations and 22 variables,, each observation being an unique major. I chose left join because I wanted all the information from both datsets, and this allowed me to do that. I could have done full join but I am not as comfortable with that. I left joined the "grad" dataset to the "all" dataset. They had a common ID of major code, which is a four digit unique identifier for each major. I could have also joined by the major name. Once joined, there were 173 observations and 32 variables, each observation being an unique major. This makes the size of the joined dataset the size of (the two original datasets - 1) because the joined ID variable only counts once. 2/32 variables will be dropped in wrangling. There were no IDs that appeared in one but not the other, and no observations were dropped. I included the suffix parameter because both datasets have "major" and "major_category" as variables. Since I only need one set of them, I uniquely identified the second set with ".y" so that I can easily drop it later with contains(). 
+
 ####  Wrangling
 
 ```{R}
-# your wrangling code
+library(knitr)
+joined %>% select(!contains(".y")) -> joined 
+joined %>% arrange(desc(median))%>% group_by(major_category) %>% slice(1:4) 
+joined %>% mutate(diffp75=grad_p75th-p75th, diffmed = grad_median-median, diffp25=grad_p25th-p25th)%>% arrange(desc(diffmed)) 
+joined %>% filter(total>mean(total)) %>% summarize(mean(median))
+joined %>% filter(str_detect(major, "Economics")) 
 
-# your wrangling code
+#summary statistics
+joined %>% group_by(major_category) %>% summarize(Count=n())
+joined %>% group_by(major_category) %>% summarize(Mean= mean(unemployment_rate),StDev= sd(unemployment_rate),Count = n()) %>%kable(digits = 3, align = 'c',col.names = c("Major Category", "Mean", "StDev", "Count"), caption = "Unemployment Rates")
+joined %>% summarize(function(x)sum(is.na(x)))
+joined %>% group_by(major_category) %>% summarize(AvgDiffQ1= mean(grad_p25th-p25th), AvgDiffMedian= mean(grad_median-median),AvgDiffQ3=mean(grad_p75th-p75th))
+joined %>% summarize(min(unemployment_rate), min(grad_unemployment_rate), min(median), min(grad_median),max(unemployment_rate), max(grad_unemployment_rate), max(median), max(grad_median))
 
-# your wrangling code
+
+
 ```
 
 Your discussion of wrangling section here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
-
+The first line of code drops the duplicate columns from the join by selecting the column names that end with ".y". This becomes the new joined set.
+The second groups by the category then takes the top 4 median incomes of each category. This is because some categories, like business and art, have multiple majors attached to them that are similar. 
+The third line of code finds the differences between income by recent graduates and the entire industry. After arranging, it shows that Health And Medical Preparatory Programs majors earned 85,000 more than the median worker of the industry. Almost all majors, but 2, the median recent graduate earned more than the median worker. Petroleum engineers make 1000 less and architectural engineering made the same. 
+What if some majors have very few workers but have a high income? I filter to majors that have greater workers than the average of the overall total. This filters to 40 majors that have median incomes of 55702.5. 
+The last line of code allows me to see the different type of economics. I only thought there was 1!
 
 #### Visualizing
 
 ```{R}
-# your plot 1
+set <- joined %>% arrange(desc(median)) %>% head(25)
+
+             
+ggplot(set, aes(major,median))+ geom_point(aes(color=major_category, size= median))+ theme(legend.position="top") +scale_size(guide = 'none') + coord_flip()+theme(axis.text.x = element_text(angle = 90))+labs(color = "Major Category") +xlab("Major") +ylab("Median Income $")+ggtitle("Top 25 Median Incomes Grouped by Category")
 ```
 
-Your discussion of plot 1
+This plot depicts the top 25 median incomes and their respective majors. They are grouped by the major category, and it is evident that out of the 20 majors, engineering dominates the most. Petroleum Engineering has a median income of $125,000 making it the highest paid. The bigger the circles, the higher the pay. 
 
 ```{R}
-# your plot 2
+joined %>% ggplot(aes(x=unemployment_rate, y= median, color= major_category)) +geom_point()+ geom_line(aes(group=major_category)) + scale_x_continuous(breaks=seq(0, .15, .05),labels=c("0%","5%","10%","15%"))+scale_y_continuous(labels=scales::dollar)+ theme_minimal() +ggtitle("Unemployment Rates by Major Category") + xlab("Unemployment Rate") + ylab("Median Income") + labs(color = "Major Category") 
 ```
 
 Your discussion of plot 2
-
 ```{R}
-# your plot 3
+joined %>% group_by(major_category) %>% mutate(DiffQ1= grad_p25th-p25th, DiffMedian= grad_median-median,DiffQ3=grad_p75th-p75th) -> joined2
+joined2
+options(scipen=10000)
+joined2 %>% ggplot(aes(major_category)) + geom_bar(aes(y=total, fill=major_category),stat="summary", fun=mean)+theme(axis.text.x = element_text(angle=45, hjust=1), 
+        legend.position="none") +scale_y_continuous(breaks=seq(0,800000,100000),labels = scales::comma) +ggtitle("Mean Total Workforce") + xlab("Major Category") + ylab("Total Workforce") 
 ```
+```
+
 
 Your discussion of plot 3
 
