@@ -80,7 +80,7 @@ joined %>% filter(str_detect(major, "Economics"))
 #summary statistics
 joined %>% group_by(major_category) %>% summarize(Count=n())
 joined %>% group_by(major_category) %>% summarize(Mean= mean(unemployment_rate),StDev= sd(unemployment_rate),Count = n()) %>%kable(digits = 3, align = 'c',col.names = c("Major Category", "Mean", "StDev", "Count"), caption = "Unemployment Rates")
-joined %>% summarize(function(x)sum(is.na(x)))
+joined %>% summarize_all(function(x)sum(is.na(x)))
 joined %>% group_by(major_category) %>% summarize(AvgDiffQ1= mean(grad_p25th-p25th), AvgDiffMedian= mean(grad_median-median),AvgDiffQ3=mean(grad_p75th-p75th))
 joined %>% summarize(min(unemployment_rate), min(grad_unemployment_rate), min(median), min(grad_median),max(unemployment_rate), max(grad_unemployment_rate), max(median), max(grad_median))
 
